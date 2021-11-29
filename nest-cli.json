@@ -1,0 +1,6 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/api/src/app",
+  "monorepo": true,
+  "root": "apps/api"
+}

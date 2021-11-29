@@ -1,11 +1,23 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { CoreModule } from './core/core.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserEntity } from './user/entity/user.entity';
+import { join } from 'path';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+console.log(join(__dirname, '../../../../data/store.db'));
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      synchronize: true,
+      database: join(__dirname, '../../../data/store.db'),
+      entities: [UserEntity],
+    }),
+    UserModule,
+    AuthModule,
+    CoreModule],
 })
 export class AppModule {}
