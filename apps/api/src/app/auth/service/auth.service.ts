@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../user/service/user.service';
 import { UserEntity, UserEntityRole } from '../../user/entity/user.entity';
 import { pbkdf2 } from 'crypto';
-import { from, map, Observable, Subscriber, switchMap } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -11,49 +10,40 @@ export class AuthService {
               protected userService: UserService) {
   }
 
-  register(
+  async register(
     email: string,
     name: string,
     password: string,
     role: UserEntityRole = UserEntityRole.User,
-  ): Observable<UserEntity> {
+  ): Promise<UserEntity> {
+    const salt: string = this.generateSalt();
+    const hash: string = await this.getHash(password, salt)
+    const user: UserEntity = this.userService.repo.create({
+      email,
+      name,
+      salt,
+      password: hash.toString(),
+      role,
+    });
+
+    return this.userService.repo.save(user);
+  }
+
+  async updatePassword(id: number, password: string): Promise<void> {
     const salt: string = this.generateSalt();
 
-    return this.getHash(password, salt)
-      .pipe(
-        switchMap((hash: string): Observable<UserEntity> => {
-          const user: UserEntity = this.userService.repo.create({
-            email,
-            name,
-            salt,
-            password: hash.toString(),
-            role,
-          });
-
-          return from(this.userService.repo.save(user));
-        }),
-      );
+    const hash: string = await this.getHash(password, salt);
+    await this.userService.repo.update({ id }, { password: hash });
   }
 
-  updatePassword(id: number, password: string): Observable<void> {
-    const salt: string = this.generateSalt();
+  async validateUser(user: UserEntity, password: string): Promise<boolean> {
+    const hash: string = await this.getHash(password, user.salt);
 
-    return this.getHash(password, salt)
-      .pipe(
-        switchMap((hash: string) => this.userService.repo.update({ id }, { password: hash })),
-        map(() => undefined),
-      );
+    return hash === user.password;
   }
 
-  validateUser(user: UserEntity, password: string): Observable<boolean> {
-    return this.getHash(password, user.salt)
-      .pipe(
-        map((hash: string): boolean => hash === user.password),
-      );
-  }
-
-  getHash(password: string, salt: string): Observable<string> {
-    return new Observable<string>((subscriber: Subscriber<string>) => {
+  async getHash(password: string, salt: string): Promise<string> {
+    return new Promise<string>((resolve: (value: string) => void, reject: (err: Error) => void) => {
       pbkdf2(
         password,
         salt,
@@ -62,11 +52,10 @@ export class AuthService {
         'sha512',
         (err: Error | null, derivedKey: Buffer) => {
           if (err) {
-            subscriber.error(err);
+            reject(err);
           } else {
-            subscriber.next(derivedKey.toString('hex'));
+            resolve(derivedKey.toString('hex'));
           }
-          subscriber.complete();
         },
       );
     });

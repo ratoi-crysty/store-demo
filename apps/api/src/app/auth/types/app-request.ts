@@ -1,7 +1,6 @@
-import { Observable } from 'rxjs';
 import { UserEntity } from '../../user/entity/user.entity';
 import { Request } from 'express';
 
 export interface AppRequest extends Request {
-  user?: Observable<UserEntity>
+  user?: UserEntity;
 }

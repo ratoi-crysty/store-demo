@@ -4,59 +4,79 @@ import { OrderEntity } from '../entity/order.entity';
 import { Connection, In, Repository } from 'typeorm';
 import { ProductService } from '../../product/service/product.service';
 import { OrderedProductModel } from '../models/ordered-product.model';
-import { catchError, concatMap, from, Observable, switchMap, throwError } from 'rxjs';
 import { ProductEntity } from '../../product/entity/product.entity';
+import { UserEntity } from '../../user/entity/user.entity';
 
 @Injectable()
 export class OrderService {
-  constructor(@InjectRepository(OrderEntity) protected repo: Repository<OrderEntity>,
+  constructor(@InjectRepository(OrderEntity) public repo: Repository<OrderEntity>,
               protected productService: ProductService,
               protected connection: Connection) {
   }
 
-  buyProducts(products: OrderedProductModel[]): Observable<void> {
+  async create(user: UserEntity, products: Array<Omit<OrderedProductModel, 'image'>>): Promise<OrderEntity> {
     const queryRunner = this.connection.createQueryRunner();
 
-    return from(queryRunner.connect())
-      .pipe(
-        concatMap((): Observable<ProductEntity[]> => {
-          return from(
-            this.productService.repo.find({
-              where: {
-                id: In(products.map((product: OrderedProductModel) => product.id)),
-              },
-              lock: {
-                mode: 'pessimistic_write',
-              },
-            }),
-          );
-        }),
-        concatMap((entities: ProductEntity[]): Observable<unknown> => {
-          const entitiesMap = new Map(entities.map((entity: ProductEntity) => [entity.id, entity]));
+    await queryRunner.connect();
+    await queryRunner.startTransaction('READ UNCOMMITTED');
 
-          products.forEach((product: OrderedProductModel) => {
-            const entity: ProductEntity | undefined = entitiesMap.get(product.id);
+    try {
+      const entities: ProductEntity[] = await this.productService.repo.find({
+        where: {
+          id: In(products.map((product: Omit<OrderedProductModel, 'image'>) => product.id)),
+        },
+        // lock: {
+        //   mode: 'pessimistic_write',
+        // },
+      });
 
-            if (!entity) {
-              throw new BadRequestException(`Product ${product.id} was not found!`);
-            }
+      const entitiesMap = new Map(entities.map((entity: ProductEntity) => [entity.id, entity]));
 
-            entity.stock -= product.count;
+      const orderedProducts: OrderedProductModel[] = products.map((
+        product: Omit<OrderedProductModel, 'image'>,
+      ): OrderedProductModel => {
+        const entity: ProductEntity | undefined = entitiesMap.get(product.id);
 
-            if (entity.stock < 0) {
-              throw new BadRequestException(`Product ${product.id} count exceeds stock!`);
-            }
-          });
+        if (!entity) {
+          throw new BadRequestException(`Product ${product.id} was not found!`);
+        }
 
-          return from(this.productService.repo.save(entities));
-        }),
-        switchMap(() => from(queryRunner.commitTransaction())),
-        catchError((err: Error) => {
-          return from(queryRunner.rollbackTransaction())
-            .pipe(
-              concatMap(() => throwError(() => new InternalServerErrorException(err))),
-            );
-        }),
-      );
+        if (product.name !== entity.name || product.price !== entity.price) {
+          throw new BadRequestException(`Product ${product.id} is out of date!`);
+        }
+
+        entity.stock -= product.count;
+
+        if (entity.stock < 0) {
+          throw new BadRequestException(`Product ${product.id} count exceeds stock!`);
+        }
+
+        return {
+          ...product,
+          image: entity.images[0],
+        };
+      });
+
+      await this.productService.repo.save(entities);
+
+      const order: OrderEntity = await this.repo.save(this.repo.create({
+        user,
+        products: orderedProducts,
+      }));
+
+      await queryRunner.commitTransaction();
+
+      console.log('Return order', order);
+
+      return order;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+
+      if (err instanceof BadRequestException) {
+        throw err;
+      } else {
+        throw new InternalServerErrorException(err);
+      }
+    }
   }
 }
