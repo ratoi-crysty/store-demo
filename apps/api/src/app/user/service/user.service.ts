@@ -14,10 +14,10 @@ export class UserService {
       this.repo.createQueryBuilder('user')
         .select('SUM(user.id)', 'sum')
         .where('user.role = :role', { role })
-        .getRawOne<number | null>() as Promise<number | null>,
+        .getRawOne<{ sum: number | null }>() as Promise<{ sum: number | null }>,
     )
       .pipe(
-        map((count: number | null) => count || 0),
+        map(({ sum }: { sum: number | null }) => sum || 0),
       );
   }
 }

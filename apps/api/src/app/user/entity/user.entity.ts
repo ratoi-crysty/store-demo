@@ -1,9 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserModel } from '../model/user.model';
+import { OrderEntity } from '../../order/entity/order.entity';
 
 export enum UserEntityRole {
-  Admin,
-  User,
+  Admin = 'Admin',
+  User = 'User',
 }
 
 @Entity()
@@ -11,7 +12,7 @@ export class UserEntity implements UserModel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'smallint' })
+  @Column({ type: 'varchar', length: 10 })
   role!: UserEntityRole;
 
   @Column({ length: 100, type: 'varchar' })
@@ -25,6 +26,9 @@ export class UserEntity implements UserModel {
 
   @Column({ length: 20, type: 'varchar' })
   salt!: string;
+
+  @OneToMany(() => OrderEntity, (order: OrderEntity) => order.user)
+  orders!: OrderEntity[];
 
   getPublicData() {
     return {

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayloadModel } from '../models/jwt-payload.model';
 import { UserService } from '../../user/service/user.service';
 import { UserEntity, UserEntityRole } from '../../user/entity/user.entity';
 import { pbkdf2 } from 'crypto';
-import { from, Observable, Subscriber, switchMap } from 'rxjs';
+import { from, map, Observable, Subscriber, switchMap } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -33,19 +32,24 @@ export class AuthService {
 
           return from(this.userService.repo.save(user));
         }),
-      )
+      );
   }
 
-  getUserPayload(user: UserEntity): JwtPayloadModel {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
+  updatePassword(id: number, password: string): Observable<void> {
+    const salt: string = this.generateSalt();
+
+    return this.getHash(password, salt)
+      .pipe(
+        switchMap((hash: string) => this.userService.repo.update({ id }, { password: hash })),
+        map(() => undefined),
+      );
   }
 
-  validateUser(payload: JwtPayloadModel): Observable<UserEntity | undefined> {
-    return from(this.userService.repo.findOne(payload.id));
+  validateUser(user: UserEntity, password: string): Observable<boolean> {
+    return this.getHash(password, user.salt)
+      .pipe(
+        map((hash: string): boolean => hash === user.password),
+      );
   }
 
   getHash(password: string, salt: string): Observable<string> {
@@ -68,8 +72,8 @@ export class AuthService {
     });
   }
 
-  signIn(payload: JwtPayloadModel): string {
-    return this.jwtService.sign(payload);
+  signIn(user: UserEntity): string {
+    return this.jwtService.sign(user.getPublicData());
   }
 
   protected generateSalt(): string {
