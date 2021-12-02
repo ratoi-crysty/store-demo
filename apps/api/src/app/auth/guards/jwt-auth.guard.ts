@@ -9,7 +9,7 @@ import { defaultAuthStrategy } from '../constants/auth.constants';
 export class JwtAuthGuard extends BaseAuthGuard(defaultAuthStrategy) {
   protected static disableMetaKey = 'AuthGuard:Disable';
 
-  static Disable(): CustomDecorator<string> {
+  static disable(): CustomDecorator<string> {
     return SetMetadata(this.disableMetaKey, true);
   }
 

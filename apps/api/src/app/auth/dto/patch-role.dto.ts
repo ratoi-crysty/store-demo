@@ -1,11 +1,14 @@
 import { IsEnum, IsNotEmpty } from 'class-validator';
-import { UserEntityRole } from '../../user/entity/user.entity';
+import { PatchRoleRequest, UserRole } from '@store-demo/api-interfaces';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class PatchRoleDto {
+export class PatchRoleDto implements PatchRoleRequest {
+  @ApiProperty()
   @IsNotEmpty()
-  @IsEnum(UserEntityRole)
-  role!: UserEntityRole;
+  @IsEnum(UserRole)
+  role!: UserRole;
 
+  @ApiProperty()
   @IsNotEmpty()
   currentPassword!: string;
 }

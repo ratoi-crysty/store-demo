@@ -7,15 +7,24 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
+import { DocumentBuilder, SwaggerModule, OpenAPIObject } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
 
+  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
+    .setTitle('Store api')
+    .setVersion('1.0.0')
+    .build();
+
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
   }));
+
+  const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(globalPrefix, app, document);
 
   const port = process.env.PORT || 3333;
 

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../user/service/user.service';
-import { UserEntity, UserEntityRole } from '../../user/entity/user.entity';
+import { UserEntity } from '../../user/entity/user.entity';
 import { pbkdf2 } from 'crypto';
+import { UserRole } from '@store-demo/api-interfaces';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,7 @@ export class AuthService {
     email: string,
     name: string,
     password: string,
-    role: UserEntityRole = UserEntityRole.User,
+    role: UserRole = UserRole.User,
   ): Promise<UserEntity> {
     const salt: string = this.generateSalt();
     const hash: string = await this.getHash(password, salt)

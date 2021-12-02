@@ -3,15 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from '../entity/order.entity';
 import { Connection, In, Repository } from 'typeorm';
 import { ProductService } from '../../product/service/product.service';
-import { OrderedProductModel } from '../models/ordered-product.model';
 import { ProductEntity } from '../../product/entity/product.entity';
 import { UserEntity } from '../../user/entity/user.entity';
+import { OrderedProductModel } from '@store-demo/api-interfaces';
+import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 
 @Injectable()
-export class OrderService {
+export class OrderService extends TypeOrmCrudService<OrderEntity> {
   constructor(@InjectRepository(OrderEntity) public repo: Repository<OrderEntity>,
               protected productService: ProductService,
               protected connection: Connection) {
+    super(repo);
   }
 
   async create(user: UserEntity, products: Array<Omit<OrderedProductModel, 'image'>>): Promise<OrderEntity> {

@@ -1,8 +1,9 @@
 import { ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { CrudActions, getAction } from '@nestjsx/crud';
-import { UserEntity, UserEntityRole } from '../../user/entity/user.entity';
+import { UserEntity } from '../../user/entity/user.entity';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { lastValueFrom, Observable } from 'rxjs';
+import { UserRole } from '@store-demo/api-interfaces';
 
 @Injectable()
 export class ProductAclGuard extends JwtAuthGuard {
@@ -23,7 +24,7 @@ export class ProductAclGuard extends JwtAuthGuard {
       .switchToHttp()
       .getRequest<Request & { user: UserEntity }>()
       .user
-      .role === UserEntityRole.Admin;
+      .role === UserRole.Admin;
   }
 
   protected async canActivateAsync(context: ExecutionContext): Promise<boolean> {

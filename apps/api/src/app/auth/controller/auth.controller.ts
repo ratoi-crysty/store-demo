@@ -13,9 +13,8 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { LoginCredentialsDto } from '../dto/login-credentials.dto';
-import { UserModel } from '../../user/model/user.model';
 import { RegisterDetailsDto } from '../dto/register-details.dto';
-import { UserEntity, UserEntityRole } from '../../user/entity/user.entity';
+import { UserEntity } from '../../user/entity/user.entity';
 import { UserService } from '../../user/service/user.service';
 import { AdminGuard } from '../guards/admin.guard';
 import { PatchRoleDto } from '../dto/patch-role.dto';
@@ -23,6 +22,13 @@ import { PatchPasswordDto } from '../dto/patch-password.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AppRequest } from '../types/app-request';
 import { getSessionUser } from '../utils/session.utils';
+import { UserModel, UserRole } from '@store-demo/api-interfaces';
+import { ApiProperty, ApiResponse } from '@nestjs/swagger';
+
+class TokenResponse {
+  @ApiProperty({ readOnly: true })
+  token!: string;
+}
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
@@ -32,12 +38,16 @@ export class AuthController {
   }
 
   @Get()
+  @ApiResponse({
+    type: () => UserEntity,
+  })
   index(@Req() req: AppRequest): UserModel {
     return getSessionUser(req);
   }
 
-  @JwtAuthGuard.Disable()
   @Post('login')
+  @ApiResponse({ type: () => TokenResponse })
+  @JwtAuthGuard.disable()
   async login(@Body() credentials: LoginCredentialsDto): Promise<{ token: string }> {
     const user: UserEntity | undefined = await this.userService.repo.findOne({ email: credentials.email });
 
@@ -54,8 +64,9 @@ export class AuthController {
     };
   }
 
-  @JwtAuthGuard.Disable()
   @Post('register')
+  @ApiResponse({ type: () => TokenResponse })
+  @JwtAuthGuard.disable()
   async register(@Body() details: RegisterDetailsDto): Promise<{ token: string }> {
     let user: UserEntity | undefined = await this.userService.repo.findOne({ email: details.email });
 
@@ -63,13 +74,13 @@ export class AuthController {
       throw new BadRequestException('Email already exists!');
     }
 
-    const adminsCount: number = await this.userService.countByRole(UserEntityRole.Admin);
+    const adminsCount: number = await this.userService.countByRole(UserRole.Admin);
 
     user = await this.authService.register(
       details.email,
       details.name,
       details.password,
-      adminsCount ? UserEntityRole.User : UserEntityRole.Admin,
+      adminsCount ? UserRole.User : UserRole.Admin,
     );
 
     return {
@@ -89,22 +100,22 @@ export class AuthController {
   async patchUserPassword(
     @Req() req: AppRequest,
     @Param('id') id: string,
-    @Body() { password }: PatchPasswordDto,
+    @Body() { currentPassword, newPassword }: PatchPasswordDto,
   ): Promise<void> {
     const user: UserEntity = getSessionUser(req);
 
-    if (!(await this.authService.validateUser(user, password))) {
+    if (!(await this.authService.validateUser(user, currentPassword))) {
       throw new UnauthorizedException();
     }
 
-    await this.authService.updatePassword(+id, password);
+    await this.authService.updatePassword(+id, newPassword);
   }
 
   @Delete(':id')
   async deleteUser(@Req() req: AppRequest, @Param('id') id: string): Promise<void> {
     const user: UserEntity = getSessionUser(req);
 
-    if (user.id !== +id && user.role !== UserEntityRole.Admin) {
+    if (user.id !== +id && user.role !== UserRole.Admin) {
       throw new ForbiddenException();
     }
 

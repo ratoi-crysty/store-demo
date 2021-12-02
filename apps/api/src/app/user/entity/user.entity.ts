@@ -1,23 +1,23 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { UserModel } from '../model/user.model';
 import { OrderEntity } from '../../order/entity/order.entity';
-
-export enum UserEntityRole {
-  Admin = 'Admin',
-  User = 'User',
-}
+import { UserModel, UserRole } from '@store-demo/api-interfaces';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
 export class UserEntity implements UserModel {
+  @ApiProperty({ readOnly: true })
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @ApiProperty({ readOnly: true, enum: UserRole })
   @Column({ type: 'varchar', length: 10 })
-  role!: UserEntityRole;
+  role!: UserRole;
 
+  @ApiProperty({ readOnly: true })
   @Column({ length: 100, type: 'varchar' })
   name!: string;
 
+  @ApiProperty({ readOnly: true })
   @Column({ length: 100, type: 'varchar', unique: true })
   email!: string;
 
@@ -30,11 +30,12 @@ export class UserEntity implements UserModel {
   @OneToMany(() => OrderEntity, (order: OrderEntity) => order.user)
   orders!: OrderEntity[];
 
-  getPublicData() {
+  getPublicData(): UserModel {
     return {
       id: this.id,
       name: this.name,
       email: this.email,
+      role: this.role,
     };
   }
 
