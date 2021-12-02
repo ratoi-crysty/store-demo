@@ -68,8 +68,6 @@ export class OrderService extends TypeOrmCrudService<OrderEntity> {
 
       await queryRunner.commitTransaction();
 
-      console.log('Return order', order);
-
       return order;
     } catch (err) {
       await queryRunner.rollbackTransaction();
