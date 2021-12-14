@@ -23,6 +23,11 @@ async function bootstrap() {
     whitelist: true,
   }));
 
+  app.enableCors({
+    allowedHeaders: '*',
+    origin: '*',
+  });
+
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(globalPrefix, app, document);
 
