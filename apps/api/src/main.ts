@@ -13,11 +13,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
 
-  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
-    .setTitle('Store api')
-    .setVersion('1.0.0')
-    .build();
-
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -27,6 +22,11 @@ async function bootstrap() {
     allowedHeaders: '*',
     origin: '*',
   });
+
+  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
+    .setTitle('Store api')
+    .setVersion('1.0.0')
+    .build();
 
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(globalPrefix, app, document);
