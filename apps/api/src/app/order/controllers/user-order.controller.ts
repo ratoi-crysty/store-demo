@@ -5,9 +5,10 @@ import { UserEntity } from '../../user/entity/user.entity';
 import { getSessionUser } from '../../auth/utils/session.utils';
 import { OrderCreateDto } from '../dto/order-create.dto';
 import { OrderService } from '../service/order.service';
-import { ApiResponse } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { OrderEntity } from '../entity/order.entity';
 
+@ApiTags('UserOrder')
 @Controller('user-order')
 @UseGuards(JwtAuthGuard)
 export class UserOrderController {

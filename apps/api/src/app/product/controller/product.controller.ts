@@ -3,7 +3,9 @@ import { Crud, CrudController } from '@nestjsx/crud';
 import { ProductEntity } from '../entity/product.entity';
 import { ProductService } from '../service/product.service';
 import { ProductAclGuard } from '../guards/product-acl.guard';
+import { ApiTags } from "@nestjs/swagger";
 
+@ApiTags('Product')
 @Controller('product')
 @Crud({
   model: {

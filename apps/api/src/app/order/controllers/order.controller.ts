@@ -4,7 +4,9 @@ import { OrderService } from '../service/order.service';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { Crud } from '@nestjsx/crud';
 import { OrderEntity } from '../entity/order.entity';
+import { ApiTags } from "@nestjs/swagger";
 
+@ApiTags('Order')
 @Controller('order')
 @Crud({
   model: {

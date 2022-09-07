@@ -23,13 +23,14 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AppRequest } from '../types/app-request';
 import { getSessionUser } from '../utils/session.utils';
 import { UserModel, UserRole } from '@store-demo/api-interfaces';
-import { ApiProperty, ApiResponse } from '@nestjs/swagger';
+import { ApiProperty, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 class TokenResponse {
   @ApiProperty({ readOnly: true })
   token!: string;
 }
 
+@ApiTags('Auth')
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
 export class AuthController {

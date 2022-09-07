@@ -9,7 +9,7 @@ export class UserEntity implements UserModel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ApiProperty({ readOnly: true, enum: UserRole })
+  @ApiProperty({ readOnly: true, enum: UserRole, enumName: 'UserRole' })
   @Column({ type: 'varchar', length: 10 })
   role!: UserRole;
 
